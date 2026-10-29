@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zaid vs. Ahmed — Table Ice Hockey Championship</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ice-bg: #f0f9ff;
+            --zaid-color: #0284c7;
+            --ahmed-color: #ea580c;
+        }
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 70%, #020617 100%);
+            color: #f8fafc;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        .font-arcade {
+            font-family: 'Fredoka', sans-serif;
+        }
+        /* Arcade Button Styling */
+        .btn-arcade {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 5px 0 rgba(0,0,0,0.35), 0 8px 15px rgba(0,0,0,0.3);
+        }
+        .btn-arcade:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 0 rgba(0,0,0,0.35), 0 12px 20px rgba(0,0,0,0.4);
+        }
+        .btn-arcade:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.35), 0 4px 8px rgba(0,0,0,0.3);
+        }
+        /* Rink Outer Glow */
+        .rink-frame {
+            box-shadow:
+                0 0 0 6px #334155,
+                0 0 0 12px #0f172a,
+                0 20px 50px rgba(0, 0, 0, 0.7),
+                inset 0 0 35px rgba(14, 165, 233, 0.25);
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+            cursor: none;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+        }
+        .goal-banner-anim {
+            animation: pulseGlow 0.6s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-2 sm:p-4">
+
+    <!-- TOP HEADER & SCOREBOARD -->
+    <header class="w-full max-w-5xl flex flex-col gap-2 z-10">
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 border border-slate-700/80 rounded-2xl px-3 py-2 sm:px-5 sm:py-3 shadow-xl backdrop-blur-md">
+            
+            <!-- Player 1: ZAID -->
+            <div class="flex items-center gap-2.5 sm:gap-3">
+                <div class="relative group cursor-pointer" onclick="openPhotoModal('zaid')" title="Click to customize Zaid's photo">
+                    <canvas id="uiAvatarZaid" width="56" height="56" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-4 border-sky-400 shadow-lg bg-sky-900"></canvas>
+                    <span class="absolute -bottom-1 -right-1 bg-sky-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">📷 Edit</span>
+                </div>
+                <div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse"></span>
+                        <h2 id="zaidNameDisplay" class="font-arcade text-base sm:text-xl font-bold text-sky-300 tracking-wide">ZAID</h2>
+                    </div>
+                    <p class="text-[11px] sm:text-xs text-slate-400" id="p1ControlHint">Mouse / Touch / WASD</p>
+                    <!-- Power-Up Meter -->
+                    <div class="w-24 sm:w-28 h-2 bg-slate-800 rounded-full overflow-hidden mt-1 border border-slate-700">
+                        <div id="zaidPowerBar" class="h-full bg-gradient-to-r from-yellow-400 via-lime-400 to-sky-400 transition-all duration-150" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTER SCOREBOARD -->
+            <div class="flex flex-col items-center">
+                <div class="flex items-center gap-3 sm:gap-5 bg-slate-950/90 border-2 border-slate-700 rounded-2xl px-4 py-1.5 sm:px-6 sm:py-2 shadow-inner">
+                    <span id="scoreZaid" class="font-arcade text-3xl sm:text-5xl font-bold text-sky-400 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]">0</span>
+                    <div class="flex flex-col items-center">
+                        <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">FIRST TO <span id="targetScoreLabel">7</span></span>
+                        <span class="text-slate-600 font-arcade text-lg sm:text-2xl font-bold">VS</span>
+                        <span id="shotSpeedBadge" class="text-[10px] font-mono text-emerald-400">0 km/h</span>
+                    </div>
+                    <span id="scoreAhmed" class="font-arcade text-3xl sm:text-5xl font-bold text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.5)]">0</span>
+                </div>
+            </div>
+
+            <!-- Player 2: AHMED -->
+            <div class="flex items-center gap-2.5 sm:gap-3 flex-row-reverse sm:flex-row">
+                <div class="text-right">
+                    <div class="flex items-center justify-end gap-1.5">
+                        <h2 id="ahmedNameDisplay" class="font-arcade text-base sm:text-xl font-bold text-orange-300 tracking-wide">AHMED</h2>
+                        <span class="w-2.5 h-2.5 rounded-full bg-orange-400 animate-pulse"></span>
+                    </div>
+                    <p class="text-[11px] sm:text-xs text-slate-400" id="p2ControlHint">AI Bot / Arrows / Touch</p>
+                    <!-- Power-Up Meter -->
+                    <div class="w-24 sm:w-28 h-2 bg-slate-800 rounded-full overflow-hidden mt-1 border border-slate-700 ml-auto">
+                        <div id="ahmedPowerBar" class="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 transition-all duration-150" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="relative group cursor-pointer" onclick="openPhotoModal('ahmed')" title="Click to customize Ahmed's photo">
+                    <canvas id="uiAvatarAhmed" width="56" height="56" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-4 border-orange-400 shadow-lg bg-orange-950"></canvas>
+                    <span class="absolute -bottom-1 -left-1 bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow">📷 Edit</span>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- MAIN RINK CONTAINER -->
+    <main class="relative w-full max-w-5xl flex-1 flex items-center justify-center my-2 px-1">
+        <div id="rinkContainer" class="relative w-full flex items-center justify-center">
+            <div class="rink-frame rounded-3xl overflow-hidden relative bg-sky-50">
+                <canvas id="hockeyCanvas"></canvas>
+
+                <!-- GOAL CELEBRATION OVERLAY -->
+                <div id="goalOverlay" class="hidden absolute inset-0 pointer-events-none flex flex-col items-center justify-center bg-slate-950/55 backdrop-blur-[2px] z-20">
+                    <div class="goal-banner-anim flex flex-col items-center text-center p-6 rounded-3xl bg-slate-900/95 border-4 border-yellow-400 shadow-2xl">
+                        <canvas id="goalScorerAvatar" width="96" height="96" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-yellow-300 shadow-lg mb-2"></canvas>
+                        <h3 id="goalTitleText" class="font-arcade text-3xl sm:text-5xl font-extrabold text-yellow-300 tracking-wider drop-shadow">GOAL BY ZAID!</h3>
+                        <p id="goalSubText" class="text-sm sm:text-base text-sky-200 font-semibold mt-1">Blistering Slapshot • 94 km/h</p>
+                    </div>
+                </div>
+
+                <!-- PAUSE / VICTORY MODAL OVERLAY -->
+                <div id="matchOverlay" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md z-30 p-4">
+                    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl max-w-md w-full p-6 text-center shadow-2xl">
+                        <div class="flex justify-center gap-4 mb-3">
+                            <canvas id="winnerAvatarCanvas" width="90" height="90" class="w-24 h-24 rounded-full border-4 border-yellow-400 shadow-xl"></canvas>
+                        </div>
+                        <span id="overlayBadge" class="inline-block bg-yellow-400/20 text-yellow-300 border border-yellow-400/40 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2">Championship Match</span>
+                        <h2 id="overlayHeadline" class="font-arcade text-3xl sm:text-4xl font-bold text-white mb-2">ZAID WINS!</h2>
+                        <p id="overlayDescription" class="text-slate-300 text-sm mb-6">What an unforgettable table ice hockey showdown!</p>
+                        <div class="flex flex-wrap justify-center gap-3">
+                            <button onclick="resetMatch()" class="btn-arcade bg-gradient-to-b from-emerald-400 to-emerald-600 text-slate-950 font-arcade font-bold px-6 py-3 rounded-xl text-lg">
+                                🏒 Play Again
+                            </button>
+                            <button onclick="openPhotoModal('both')" class="btn-arcade bg-gradient-to-b from-sky-400 to-sky-600 text-slate-950 font-arcade font-bold px-5 py-3 rounded-xl text-base">
+                                📷 Load Photos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- BOTTOM GAME CONTROLS BAR -->
+    <footer class="w-full max-w-5xl z-10">
+        <div class="bg-slate-900/90 border border-slate-700/80 rounded-2xl px-3 py-2.5 sm:px-5 sm:py-3 flex flex-wrap items-center justify-between gap-2 shadow-xl backdrop-blur-md">
+            
+            <!-- Left group: Mode & Difficulty -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button id="modeBtn" onclick="toggleGameMode()" class="btn-arcade bg-gradient-to-b from-indigo-500 to-indigo-700 text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5">
+                    <span>🤖</span> <span id="modeBtnText">Mode: 1P vs AI</span>
+                </button>
+
+                <button id="aiDiffBtn" onclick="cycleAiDifficulty()" class="btn-arcade bg-gradient-to-b from-purple-500 to-purple-700 text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5">
+                    <span>⚡</span> <span id="aiDiffText">AI: Medium</span>
+                </button>
+
+                <button onclick="useSpecialPower('zaid')" class="btn-arcade bg-gradient-to-b from-sky-400 to-sky-600 text-slate-950 text-xs sm:text-sm font-bold px-3 py-2 rounded-xl flex items-center gap-1" title="Spacebar or Click: Activate Zaid's Pool Float Mega-Bounce!">
+                    <span>🦜🍌</span> <span class="hidden sm:inline">Zaid Boost</span> <span class="text-[10px] bg-slate-900/30 px-1.5 py-0.5 rounded">[Space]</span>
+                </button>
+
+                <button onclick="useSpecialPower('ahmed')" class="btn-arcade bg-gradient-to-b from-orange-400 to-orange-600 text-slate-950 text-xs sm:text-sm font-bold px-3 py-2 rounded-xl flex items-center gap-1" title="Enter or Click: Activate Ahmed's Chocolate Turbo Rush!">
+                    <span>🍫⚡</span> <span class="hidden sm:inline">Ahmed Boost</span> <span class="text-[10px] bg-slate-900/30 px-1.5 py-0.5 rounded">[Enter]</span>
+                </button>
+            </div>
+
+            <!-- Right group: Photos, Table Orientation, Sound, Reset -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="openPhotoModal('both')" class="btn-arcade bg-gradient-to-b from-amber-400 to-amber-500 text-slate-950 text-xs sm:text-sm font-extrabold px-3.5 py-2 rounded-xl flex items-center gap-1.5">
+                    <span>🖼️</span> <span>Set Zaid & Ahmed Photos</span>
+                </button>
+
+                <button onclick="toggleOrientation()" class="btn-arcade bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl" title="Switch Horizontal / Vertical Table">
+                    🔄 <span id="layoutBtnText" class="hidden md:inline">Table: Auto</span>
+                </button>
+
+                <button onclick="toggleSound()" id="soundBtn" class="btn-arcade bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl" title="Toggle Arcade Sound Effects">
+                    🔊
+                </button>
+
+                <button onclick="resetMatch()" class="btn-arcade bg-gradient-to-b from-rose-500 to-rose-700 text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl">
+                    🔄 Reset
+                </button>
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- PHOTO UPLOAD & SMART CROP MODAL -->
+    <div id="photoModal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl my-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+                <div>
+                    <h3 class="font-arcade text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                        <span>📸</span> Customize Zaid & Ahmed Paddles
+                    </h3>
+                    <p class="text-xs sm:text-sm text-slate-400 mt-0.5">
+                        Select your <code class="text-sky-300 font-mono">Zaid.jpg</code> and <code class="text-orange-300 font-mono">ahmed.jpg</code> photos—we've pre-calibrated the zoom & face crop for both photos!
+                    </p>
+                </div>
+                <button onclick="closePhotoModal()" class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full w-9 h-9 flex items-center justify-center font-bold text-lg">✕</button>
+            </div>
+
+            <!-- Two Columns for Zaid & Ahmed -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                
+                <!-- ZAID CARD -->
+                <div class="bg-slate-950/80 border border-sky-500/40 rounded-2xl p-4 flex flex-col items-center">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-xs font-bold">Player 1 Paddle</span>
+                        <h4 class="font-arcade text-lg font-bold text-sky-300">Zaid (Pool & Sunglasses)</h4>
+                    </div>
+
+                    <div class="relative my-2">
+                        <canvas id="previewZaidCanvas" width="140" height="140" class="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.4)] bg-slate-900"></canvas>
+                    </div>
+
+                    <label class="btn-arcade cursor-pointer bg-gradient-to-b from-sky-400 to-sky-600 text-slate-950 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl mt-2 mb-3 inline-flex items-center gap-2">
+                        <span>📂 Choose Zaid.jpg Photo</span>
+                        <input type="file" id="zaidFileInput" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, 'zaid')">
+                    </label>
+
+                    <!-- Crop Sliders for Zaid -->
+                    <div class="w-full space-y-2 text-xs text-slate-300 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold text-sky-300">Crop Preset:</span>
+                            <div class="flex gap-1">
+                                <button onclick="applyPreset('zaid', 'floats')" class="px-2 py-1 rounded bg-sky-500/20 hover:bg-sky-500/40 text-sky-200 text-[11px] font-semibold">🍌🦜 Face + Floats</button>
+                                <button onclick="applyPreset('zaid', 'face')" class="px-2 py-1 rounded bg-sky-500/20 hover:bg-sky-500/40 text-sky-200 text-[11px] font-semibold">😎 Close-Up Face</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-14">Zoom:</span>
+                            <input type="range" id="zaidZoom" min="0.8" max="3.5" step="0.05" value="1.85" oninput="updateCropSliders('zaid')" class="flex-1 accent-sky-400">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-14">Pan X:</span>
+                            <input type="range" id="zaidPanX" min="-0.4" max="0.4" step="0.01" value="0.0" oninput="updateCropSliders('zaid')" class="flex-1 accent-sky-400">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-14">Pan Y:</span>
+                            <input type="range" id="zaidPanY" min="-0.4" max="0.4" step="0.01" value="0.14" oninput="updateCropSliders('zaid')" class="flex-1 accent-sky-400">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AHMED CARD -->
+                <div class="bg-slate-950/80 border border-orange-500/40 rounded-2xl p-4 flex flex-col items-center">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-300 text-xs font-bold">Player 2 Paddle</span>
+                        <h4 class="font-arcade text-lg font-bold text-orange-300">Ahmed (Chocolate Smile)</h4>
+                    </div>
+
+                    <div class="relative my-2">
+                        <canvas id="previewAhmedCanvas" width="140" height="140" class="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-orange-400 shadow-[0_0_20px_rgba(251,146,60,0.4)] bg-slate-900"></canvas>
+                    </div>
+
+                    <label class="btn-arcade cursor-pointer bg-gradient-to-b from-orange-400 to-orange-600 text-slate-950 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl mt-2 mb-3 inline-flex items-center gap-2">
+                        <span>📂 Choose ahmed.jpg Photo</span>
+                        <input type="file" id="ahmedFileInput" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, 'ahmed')">
+                    </label>
+
+                    <!-- Crop Sliders for Ahmed -->
+                    <div class="w-full space-y-2 text-xs text-slate-300 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold text-orange-300">Crop Preset:</span>
+                            <div class="flex gap-1">
+                                <button onclick="applyPreset('ahmed', 'face')" class="px-2 py-1 rounded bg-orange-500/20 hover:bg-orange-500/40 text-orange-200 text-[11px] font-semibold">😄 Big Smile</button>
+                                <button onclick="applyPreset('ahmed', 'full')" class="px-2 py-1 rounded bg-orange-500/20 hover:bg-orange-500/40 text-orange-200 text-[11px] font-semibold">👕 Face + Shirt</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-14">Zoom:</span>
+                            <input type="range" id="ahmedZoom" min="0.8" max="3.5" step="0.05" value="1.45" oninput="updateCropSliders('ahmed')" class="flex-1 accent-orange-400">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-14">Pan X:</span>
+                            <input type="range" id="ahmedPanX" min="-0.4" max="0.4" step="0.01" value="-0.03" oninput="updateCropSliders('ahmed')" class="flex-1 accent-orange-400">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-14">Pan Y:</span>
+                            <input type="range" id="ahmedPanY" min="-0.4" max="0.4" step="0.01" value="-0.12" oninput="updateCropSliders('ahmed')" class="flex-1 accent-orange-400">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-5 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+                <p class="text-xs text-slate-400">
+                    💡 <strong>Tip:</strong> You can also drag & drop both image files directly onto the game rink at any time!
+                </p>
+                <button onclick="closePhotoModal()" class="btn-arcade bg-gradient-to-b from-emerald-400 to-emerald-600 text-slate-950 font-arcade font-bold px-6 py-2.5 rounded-xl text-base">
+                    ✅ Done & Back to Rink
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /********************************************************************
+         * 1. AUDIO SYNTHESIZER (WEB AUDIO API - NO EXTERNAL SOUND FILES)
+         ********************************************************************/
+        class ArcadeAudio {
+            constructor() {
+                this.enabled = true;
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+            playPaddleHit(intensity = 1) {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                const baseFreq = 180 + Math.min(intensity * 25, 320);
+                osc.frequency.setValueAtTime(baseFreq, now);
+                osc.frequency.exponentialRampToValueAtTime(65, now + 0.09);
+
+                gain.gain.setValueAtTime(Math.min(0.35, 0.12 + intensity * 0.03), now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.095);
+            }
+            playWallBounce() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.exponentialRampToValueAtTime(55, now + 0.06);
+
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.065);
+            }
+            playPowerUp() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [330, 440, 554.37, 659.25];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.045);
+                    gain.gain.setValueAtTime(0.12, now + i * 0.045);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + (i + 1) * 0.06);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.045);
+                    osc.stop(now + (i + 1) * 0.065);
+                });
+            }
+            playGoalHorn() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                // Stadium dual-tone air horn
+                [146.83, 220, 293.66].forEach(freq => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.setValueAtTime(0.12, now + 0.45);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.68);
+                });
+            }
+        }
+        const sound = new ArcadeAudio();
+
+        /********************************************************************
+         * 2. PLAYER AVATAR SYSTEM (CUSTOM PORTRAIT ART + PHOTO CROPPER)
+         ********************************************************************/
+        const avatarState = {
+            zaid: {
+                img: null,
+                // Pre-calibrated for Zaid.jpg (centers on Zaid's sunglasses grin & banana/parrot floats, cropping out top wooden table & bottom border)
+                zoom: 1.85,
+                panX: 0.0,
+                panY: 0.14
+            },
+            ahmed: {
+                img: null,
+                // Pre-calibrated for ahmed.jpg (centers on Ahmed's smiling face)
+                zoom: 1.45,
+                panX: -0.03,
+                panY: -0.12
+            }
+        };
+
+        /**
+         * Renders either the user's loaded photo (with smart circular crop)
+         * OR a detailed custom-illustrated caricature matching the exact photo!
+         */
+        function renderPlayerAvatar(ctx, playerKey, cx, cy, radius, boostActive = false) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+
+            const state = avatarState[playerKey];
+            if (state && state.img) {
+                const img = state.img;
+                const zoom = state.zoom;
+                const minDim = Math.min(img.width, img.height);
+                const cropSize = minDim / zoom;
+                const sx = (img.width - cropSize) * 0.5 + state.panX * img.width;
+                const sy = (img.height - cropSize) * 0.5 + state.panY * img.height;
+
+                ctx.fillStyle = playerKey === 'zaid' ? '#0284c7' : '#ea580c';
+                ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+                ctx.drawImage(
+                    img,
+                    sx, sy, cropSize, cropSize,
+                    cx - radius, cy - radius, radius * 2, radius * 2
+                );
+            } else if (playerKey === 'zaid') {
+                drawZaidIllustratedPortrait(ctx, cx, cy, radius);
+            } else {
+                drawAhmedIllustratedPortrait(ctx, cx, cy, radius);
+            }
+            ctx.restore();
+
+            // Outer 3D Air Hockey Mallet Rim
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.lineWidth = Math.max(3, radius * 0.12);
+            if (playerKey === 'zaid') {
+                ctx.strokeStyle = boostActive ? '#fde047' : '#38bdf8';
+            } else {
+                ctx.strokeStyle = boostActive ? '#fde047' : '#fb923c';
+            }
+            ctx.stroke();
+
+            // Subtle inner glossy highlight ring
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.91, -Math.PI * 0.75, -Math.PI * 0.25);
+            ctx.lineWidth = Math.max(2, radius * 0.06);
+            ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * Custom illustrated portrait of Zaid from Zaid.jpg:
+         * Pool background, dark bangs, iconic white-framed sunglasses, big toothy smile,
+         * yellow banana float on left, pink/green parrot float on right!
+         */
+        function drawZaidIllustratedPortrait(ctx, cx, cy, r) {
+            // Sky & Pool water backdrop
+            const bgGrad = ctx.createLinearGradient(cx, cy - r, cx, cy + r);
+            bgGrad.addColorStop(0, '#7dd3fc');
+            bgGrad.addColorStop(0.65, '#38bdf8');
+            bgGrad.addColorStop(1, '#0284c7');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+            // Shoulders / Tan skin
+            ctx.fillStyle = '#eab68c';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + r * 0.72, r * 0.52, r * 0.42, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ears
+            ctx.fillStyle = '#e5ad82';
+            ctx.beginPath();
+            ctx.arc(cx - r * 0.38, cy - r * 0.05, r * 0.1, 0, Math.PI * 2);
+            ctx.arc(cx + r * 0.38, cy - r * 0.05, r * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.fillStyle = '#f1bfa0';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy - r * 0.08, r * 0.36, r * 0.44, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Dark spiky bangs hair
+            ctx.fillStyle = '#1e1b18';
+            ctx.beginPath();
+            ctx.arc(cx, cy - r * 0.22, r * 0.38, Math.PI, Math.PI * 2);
+            ctx.lineTo(cx + r * 0.35, cy - r * 0.15);
+            ctx.lineTo(cx + r * 0.2, cy - r * 0.28);
+            ctx.lineTo(cx + r * 0.08, cy - r * 0.16);
+            ctx.lineTo(cx - r * 0.04, cy - r * 0.3);
+            ctx.lineTo(cx - r * 0.18, cy - r * 0.16);
+            ctx.lineTo(cx - r * 0.35, cy - r * 0.2);
+            ctx.closePath();
+            ctx.fill();
+
+            // Iconic White-Framed Sunglasses
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(cx - r * 0.36, cy - r * 0.2, r * 0.32, r * 0.22, r * 0.05);
+            ctx.roundRect(cx + r * 0.04, cy - r * 0.2, r * 0.32, r * 0.22, r * 0.05);
+            ctx.fillRect(cx - r * 0.06, cy - r * 0.15, r * 0.12, r * 0.05);
+            ctx.fill();
+
+            // Dark Sunglasses Lenses
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.roundRect(cx - r * 0.32, cy - r * 0.17, r * 0.24, r * 0.16, r * 0.03);
+            ctx.roundRect(cx + r * 0.08, cy - r * 0.17, r * 0.24, r * 0.16, r * 0.03);
+            ctx.fill();
+
+            // Big Happy Toothy Grin
+            ctx.fillStyle = '#991b1b';
+            ctx.beginPath();
+            ctx.arc(cx, cy + r * 0.1, r * 0.2, 0.08 * Math.PI, 0.92 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - r * 0.14, cy + r * 0.12, r * 0.28, r * 0.07);
+
+            // Left Yellow Banana Float
+            ctx.save();
+            ctx.translate(cx - r * 0.56, cy + r * 0.35);
+            ctx.rotate(-0.35);
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 0.28, r * 0.45, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#1e1b18';
+            ctx.beginPath();
+            ctx.arc(0, -r * 0.3, r * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Right Colorful Parrot Float (Green wing + Pink/Orange body + Blue beak)
+            ctx.save();
+            ctx.translate(cx + r * 0.52, cy + r * 0.32);
+            // Green wings
+            ctx.fillStyle = '#4ade80';
+            ctx.beginPath();
+            ctx.ellipse(-r * 0.25, r * 0.1, r * 0.35, r * 0.15, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            // Orange/Pink Parrot body
+            ctx.fillStyle = '#fb923c';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 0.18, r * 0.32, 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            // Pink head
+            ctx.fillStyle = '#f472b6';
+            ctx.beginPath();
+            ctx.arc(-r * 0.02, -r * 0.28, r * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+            // Blue beak
+            ctx.fillStyle = '#0284c7';
+            ctx.beginPath();
+            ctx.arc(-r * 0.05, -r * 0.26, r * 0.08, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        /**
+         * Custom illustrated portrait of Ahmed from ahmed.jpg:
+         * Night canal glow background, white shirt with red/orange collar & blue sleeve,
+         * warm brown hair, expressive dark eyes, and big chocolate-stained toothy smile!
+         */
+        function drawAhmedIllustratedPortrait(ctx, cx, cy, r) {
+            // Warm evening lights backdrop
+            const bgGrad = ctx.createLinearGradient(cx, cy - r, cx, cy + r);
+            bgGrad.addColorStop(0, '#1e293b');
+            bgGrad.addColorStop(1, '#475569');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+            // Twinkling golden canal lights in background
+            ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
+            ctx.beginPath();
+            ctx.arc(cx - r * 0.65, cy - r * 0.2, r * 0.12, 0, Math.PI * 2);
+            ctx.arc(cx + r * 0.7, cy - r * 0.1, r * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // White T-shirt with blue sleeve & bright orange-red collar
+            ctx.fillStyle = '#f8fafc';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + r * 0.82, r * 0.72, r * 0.45, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Blue raglan right sleeve
+            ctx.fillStyle = '#6366f1';
+            ctx.beginPath();
+            ctx.ellipse(cx + r * 0.55, cy + r * 0.82, r * 0.35, r * 0.4, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Red-orange crew neck collar
+            ctx.strokeStyle = '#ea580c';
+            ctx.lineWidth = r * 0.11;
+            ctx.beginPath();
+            ctx.arc(cx, cy + r * 0.42, r * 0.32, 0.15 * Math.PI, 0.85 * Math.PI);
+            ctx.stroke();
+
+            // Head / Face
+            ctx.fillStyle = '#f1c29b';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy - r * 0.04, r * 0.48, r * 0.54, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Soft brown hair
+            ctx.fillStyle = '#4a321f';
+            ctx.beginPath();
+            ctx.arc(cx, cy - r * 0.18, r * 0.51, Math.PI * 0.95, Math.PI * 2.05);
+            ctx.quadraticCurveTo(cx, cy - r * 0.32, cx - r * 0.48, cy - r * 0.22);
+            ctx.closePath();
+            ctx.fill();
+
+            // Eyebrows
+            ctx.strokeStyle = '#3b2616';
+            ctx.lineWidth = r * 0.055;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(cx - r * 0.3, cy - r * 0.16);
+            ctx.quadraticCurveTo(cx - r * 0.18, cy - r * 0.21, cx - r * 0.08, cy - r * 0.15);
+            ctx.moveTo(cx + r * 0.08, cy - r * 0.15);
+            ctx.quadraticCurveTo(cx + r * 0.18, cy - r * 0.21, cx + r * 0.3, cy - r * 0.16);
+            ctx.stroke();
+
+            // Warm dark eyes
+            ctx.fillStyle = '#1e1b18';
+            ctx.beginPath();
+            ctx.arc(cx - r * 0.18, cy - r * 0.05, r * 0.065, 0, Math.PI * 2);
+            ctx.arc(cx + r * 0.18, cy - r * 0.05, r * 0.065, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eye catchlights
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(cx - r * 0.16, cy - r * 0.07, r * 0.022, 0, Math.PI * 2);
+            ctx.arc(cx + r * 0.2, cy - r * 0.07, r * 0.022, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cute nose
+            ctx.fillStyle = '#dca378';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + r * 0.06, r * 0.08, r * 0.055, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Big Happy Chocolate-Grin Mouth!
+            ctx.fillStyle = '#5c2d16'; // Chocolate smudge around corners
+            ctx.beginPath();
+            ctx.ellipse(cx + r * 0.15, cy + r * 0.24, r * 0.12, r * 0.09, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#7f1d1d';
+            ctx.beginPath();
+            ctx.arc(cx, cy + r * 0.16, r * 0.24, 0.05 * Math.PI, 0.95 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
+
+            // White teeth row
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - r * 0.17, cy + r * 0.18, r * 0.34, r * 0.08);
+        }
+
+        function refreshAllAvatarCanvases() {
+            const cZaid = document.getElementById('uiAvatarZaid');
+            const cAhmed = document.getElementById('uiAvatarAhmed');
+            const pZaid = document.getElementById('previewZaidCanvas');
+            const pAhmed = document.getElementById('previewAhmedCanvas');
+
+            if (cZaid) {
+                const ctx = cZaid.getContext('2d');
+                ctx.clearRect(0, 0, cZaid.width, cZaid.height);
+                renderPlayerAvatar(ctx, 'zaid', 28, 28, 26);
+            }
+            if (cAhmed) {
+                const ctx = cAhmed.getContext('2d');
+                ctx.clearRect(0, 0, cAhmed.width, cAhmed.height);
+                renderPlayerAvatar(ctx, 'ahmed', 28, 28, 26);
+            }
+            if (pZaid) {
+                const ctx = pZaid.getContext('2d');
+                ctx.clearRect(0, 0, pZaid.width, pZaid.height);
+                renderPlayerAvatar(ctx, 'zaid', 70, 70, 66);
+            }
+            if (pAhmed) {
+                const ctx = pAhmed.getContext('2d');
+                ctx.clearRect(0, 0, pAhmed.width, pAhmed.height);
+                renderPlayerAvatar(ctx, 'ahmed', 70, 70, 66);
+            }
+        }
+
+        /********************************************************************
+         * 3. PHOTO UPLOAD, PRESETS & DRAG-AND-DROP HANDLERS
+         ********************************************************************/
+        function openPhotoModal(focusPlayer) {
+            document.getElementById('photoModal').classList.remove('hidden');
+            refreshAllAvatarCanvases();
+        }
+        function closePhotoModal() {
+            document.getElementById('photoModal').classList.add('hidden');
+        }
+
+        function handlePhotoUpload(event, playerKey) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            loadFileIntoPlayer(file, playerKey);
+        }
+
+        function loadFileIntoPlayer(file, playerKey) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    avatarState[playerKey].img = img;
+                    // Auto-apply calibrated crop preset based on aspect ratio or filename
+                    if (playerKey === 'zaid') {
+                        applyPreset('zaid', 'floats');
+                    } else {
+                        applyPreset('ahmed', 'face');
+                    }
+                    refreshAllAvatarCanvases();
+                    sound.playPowerUp();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /**
+         * Automatically loads Zaid.jpg and ahmed.jpg when hosted on GitHub Pages
+         * in the same repository folder as index.html.
+         */
+        function tryAutoLoadRepoPhotos() {
+            const candidates = {
+                zaid: ['Zaid.jpg', 'zaid.jpg', 'Zaid.jpeg', 'zaid.png'],
+                ahmed: ['ahmed.jpg', 'Ahmed.jpg', 'ahmed.jpeg', 'ahmed.png']
+            };
+
+            ['zaid', 'ahmed'].forEach((playerKey) => {
+                const fileList = candidates[playerKey];
+                let idx = 0;
+
+                function tryNext() {
+                    if (idx >= fileList.length || avatarState[playerKey].img) return;
+                    const testImg = new Image();
+                    testImg.onload = function () {
+                        if (!avatarState[playerKey].img) {
+                            avatarState[playerKey].img = testImg;
+                            if (playerKey === 'zaid') {
+                                applyPreset('zaid', 'floats');
+                            } else {
+                                applyPreset('ahmed', 'face');
+                            }
+                            refreshAllAvatarCanvases();
+                        }
+                    };
+                    testImg.onerror = function () {
+                        idx++;
+                        tryNext();
+                    };
+                    testImg.src = fileList[idx];
+                }
+
+                tryNext();
+            });
+        }
+
+        function applyPreset(playerKey, presetName) {
+            if (playerKey === 'zaid') {
+                if (presetName === 'floats') {
+                    // Shows Zaid's sunglasses face + banana & parrot floats from Zaid.jpg
+                    avatarState.zaid.zoom = 1.85;
+                    avatarState.zaid.panX = 0.0;
+                    avatarState.zaid.panY = 0.14;
+                } else {
+                    // Tight close-up on Zaid's face & sunglasses
+                    avatarState.zaid.zoom = 2.85;
+                    avatarState.zaid.panX = 0.0;
+                    avatarState.zaid.panY = 0.08;
+                }
+                document.getElementById('zaidZoom').value = avatarState.zaid.zoom;
+                document.getElementById('zaidPanX').value = avatarState.zaid.panX;
+                document.getElementById('zaidPanY').value = avatarState.zaid.panY;
+            } else {
+                if (presetName === 'face') {
+                    // Tight framing on Ahmed's smiling face from ahmed.jpg
+                    avatarState.ahmed.zoom = 1.45;
+                    avatarState.ahmed.panX = -0.03;
+                    avatarState.ahmed.panY = -0.12;
+                } else {
+                    // Slightly wider framing showing red/blue shirt collar
+                    avatarState.ahmed.zoom = 1.05;
+                    avatarState.ahmed.panX = 0.0;
+                    avatarState.ahmed.panY = -0.04;
+                }
+                document.getElementById('ahmedZoom').value = avatarState.ahmed.zoom;
+                document.getElementById('ahmedPanX').value = avatarState.ahmed.panX;
+                document.getElementById('ahmedPanY').value = avatarState.ahmed.panY;
+            }
+            refreshAllAvatarCanvases();
+        }
+
+        function updateCropSliders(playerKey) {
+            if (playerKey === 'zaid') {
+                avatarState.zaid.zoom = parseFloat(document.getElementById('zaidZoom').value);
+                avatarState.zaid.panX = parseFloat(document.getElementById('zaidPanX').value);
+                avatarState.zaid.panY = parseFloat(document.getElementById('zaidPanY').value);
+            } else {
+                avatarState.ahmed.zoom = parseFloat(document.getElementById('ahmedZoom').value);
+                avatarState.ahmed.panX = parseFloat(document.getElementById('ahmedPanX').value);
+                avatarState.ahmed.panY = parseFloat(document.getElementById('ahmedPanY').value);
+            }
+            refreshAllAvatarCanvases();
+        }
+
+        // Drag and Drop support anywhere on the window for quick loading of Zaid.jpg and ahmed.jpg
+        window.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+            if (files.length === 0) return;
+
+            files.forEach((file, idx) => {
+                const nameLower = file.name.toLowerCase();
+                if (nameLower.includes('zaid')) {
+                    loadFileIntoPlayer(file, 'zaid');
+                } else if (nameLower.includes('ahmed')) {
+                    loadFileIntoPlayer(file, 'ahmed');
+                } else if (files.length === 2) {
+                    loadFileIntoPlayer(file, idx === 0 ? 'zaid' : 'ahmed');
+                } else {
+                    // Assign based on drop side
+                    const isLeftOrTop = e.clientX < window.innerWidth / 2;
+                    loadFileIntoPlayer(file, isLeftOrTop ? 'zaid' : 'ahmed');
+                }
+            });
+        });
+
+        /********************************************************************
+         * 4. TABLE ICE HOCKEY PHYSICS & GAME ENGINE
+         ********************************************************************/
+        const canvas = document.getElementById('hockeyCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Logical rink coordinate space: 1000 x 580 (or transposed when vertical)
+        let isVertical = false;
+        let layoutMode = 'auto'; // 'auto', 'horizontal', 'vertical'
+        let RW = 1000;
+        let RH = 580;
+
+        // Game state
+        const game = {
+            mode: '1p', // '1p' or '2p'
+            aiDifficulty: 1, // 0: Easy, 1: Medium, 2: Hard, 3: Sibling Rivalry
+            aiLabels: ['Easy', 'Medium', 'Hard', 'Sibling Rivalry 🔥'],
+            targetScore: 7,
+            scoreZaid: 0,
+            scoreAhmed: 0,
+            paused: false,
+            goalCooldown: 0,
+            lastSpeedKmh: 0,
+            particles: [],
+            puckTrail: []
+        };
+
+        // Paddles & Puck objects (in logical coordinates)
+        const paddleRadiusBase = 44;
+        const puckRadiusBase = 23;
+
+        const zaid = {
+            x: 160, y: 290,
+            vx: 0, vy: 0,
+            prevX: 160, prevY: 290,
+            radius: paddleRadiusBase,
+            power: 100,
+            boostTimer: 0
+        };
+
+        const ahmed = {
+            x: 840, y: 290,
+            vx: 0, vy: 0,
+            prevX: 840, prevY: 290,
+            radius: paddleRadiusBase,
+            power: 100,
+            boostTimer: 0
+        };
+
+        const puck = {
+            x: 500, y: 290,
+            vx: 0, vy: 0,
+            radius: puckRadiusBase,
+            maxSpeed: 23,
+            stuckTimer: 0,
+            anchorX: 500,
+            anchorY: 290,
+            aiBackoffTimer: 0
+        };
+
+        // Input tracking (Supports Mouse, Keyboard WASD + Arrows, and Multi-Touch)
+        const keys = {};
+        const activeTouches = new Map();
+        let mousePos = { active: false, x: 160, y: 290 };
+        let ignoreMouseUntilNewMove = false;
+        let lastTouchTimestamp = 0;
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            const modalHidden = document.getElementById('photoModal').classList.contains('hidden');
+
+            // Prevent arrow keys from scrolling the page during 2-player matches
+            if (modalHidden && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                e.preventDefault();
+            }
+
+            // If Player 1 uses WASD, disable resting mouse target so releasing keys never pulls paddle back
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+                mousePos.active = false;
+                mousePos.x = zaid.x;
+                mousePos.y = zaid.y;
+                ignoreMouseUntilNewMove = true;
+            }
+
+            if (e.code === 'Space' && modalHidden) {
+                e.preventDefault();
+                useSpecialPower('zaid');
+            }
+            if (e.code === 'Enter' && modalHidden) {
+                e.preventDefault();
+                useSpecialPower('ahmed');
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        function clientToRinkCoords(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = RW / rect.width;
+            const scaleY = RH / rect.height;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            // Ignore synthetic mousemove events fired by mobile browsers right after a touch
+            if (Date.now() - lastTouchTimestamp < 600) return;
+
+            const pt = clientToRinkCoords(e.clientX, e.clientY);
+            // In 2-player mode, only track mouse for Zaid if cursor is inside Zaid's half
+            const inZaidHalf = isVertical ? (pt.y >= RH * 0.5) : (pt.x <= RW * 0.5);
+            if (game.mode === '2p' && !inZaidHalf) {
+                mousePos.active = false;
+                return;
+            }
+
+            ignoreMouseUntilNewMove = false;
+            mousePos.active = true;
+            mousePos.x = pt.x;
+            mousePos.y = pt.y;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mousePos.active = false;
+        });
+
+        // Synchronize activeTouches with current screen touches to prevent stuck or ghost touch points
+        function syncActiveTouches(e) {
+            lastTouchTimestamp = Date.now();
+            mousePos.active = false; // Disable mouse target when using touch controls
+
+            const currentIds = new Set();
+            for (let i = 0; i < e.touches.length; i++) {
+                const t = e.touches[i];
+                currentIds.add(t.identifier);
+                const pt = clientToRinkCoords(t.clientX, t.clientY);
+
+                if (activeTouches.has(t.identifier)) {
+                    const data = activeTouches.get(t.identifier);
+                    data.x = pt.x;
+                    data.y = pt.y;
+                } else {
+                    const isZaidHalf = isVertical ? (pt.y > RH * 0.5) : (pt.x < RW * 0.5);
+                    activeTouches.set(t.identifier, {
+                        player: isZaidHalf ? 'zaid' : 'ahmed',
+                        x: pt.x,
+                        y: pt.y
+                    });
+                }
+            }
+
+            // Purge any ended or cancelled touches immediately
+            for (const id of Array.from(activeTouches.keys())) {
+                if (!currentIds.has(id)) {
+                    activeTouches.delete(id);
+                }
+            }
+        }
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            sound.init();
+            syncActiveTouches(e);
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            syncActiveTouches(e);
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            syncActiveTouches(e);
+        }, { passive: false });
+
+        canvas.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            syncActiveTouches(e);
+        }, { passive: false });
+
+        /********************************************************************
+         * 5. RESPONSIVE TABLE RESIZING & ORIENTATION
+         ********************************************************************/
+        function resizeRink() {
+            const container = document.getElementById('rinkContainer');
+            const availW = Math.min(window.innerWidth - 24, 1020);
+            const availH = Math.max(320, window.innerHeight - 210);
+
+            if (layoutMode === 'auto') {
+                isVertical = window.innerWidth < 680 && window.innerHeight > window.innerWidth;
+            } else {
+                isVertical = (layoutMode === 'vertical');
+            }
+
+            const prevRW = RW;
+            const prevRH = RH;
+
+            if (isVertical) {
+                RW = 580;
+                RH = 960;
+            } else {
+                RW = 1000;
+                RH = 580;
+            }
+
+            const aspect = RW / RH;
+            let cssW = availW;
+            let cssH = cssW / aspect;
+
+            if (cssH > availH) {
+                cssH = availH;
+                cssW = cssH * aspect;
+            }
+
+            canvas.width = RW;
+            canvas.height = RH;
+            canvas.style.width = `${Math.floor(cssW)}px`;
+            canvas.style.height = `${Math.floor(cssH)}px`;
+
+            if (prevRW !== RW) {
+                resetPositions('center');
+            }
+        }
+
+        window.addEventListener('resize', resizeRink);
+
+        function toggleOrientation() {
+            if (layoutMode === 'auto') layoutMode = 'vertical';
+            else if (layoutMode === 'vertical') layoutMode = 'horizontal';
+            else layoutMode = 'auto';
+
+            const labelMap = {
+                auto: 'Table: Auto',
+                vertical: 'Table: Vertical',
+                horizontal: 'Table: Horizontal'
+            };
+            document.getElementById('layoutBtnText').textContent = labelMap[layoutMode];
+            resizeRink();
+        }
+
+        /********************************************************************
+         * 6. SPECIAL POWERS & GAME CONTROLS
+         ********************************************************************/
+        function useSpecialPower(playerKey) {
+            const p = playerKey === 'zaid' ? zaid : ahmed;
+            if (p.power < 100 || p.boostTimer > 0) return;
+            p.power = 0;
+            p.boostTimer = 260; // ~4.3 seconds of super paddle & power shot!
+            sound.playPowerUp();
+            spawnParticles(p.x, p.y, playerKey === 'zaid' ? '#38bdf8' : '#fb923c', 26);
+        }
+
+        function toggleGameMode() {
+            game.mode = game.mode === '1p' ? '2p' : '1p';
+            document.getElementById('modeBtnText').textContent =
+                game.mode === '1p' ? 'Mode: 1P vs AI' : 'Mode: 2 Players';
+            document.getElementById('p2ControlHint').textContent =
+                game.mode === '1p' ? `AI (${game.aiLabels[game.aiDifficulty]})` : 'Touch / Arrow Keys';
+            document.getElementById('aiDiffBtn').style.display =
+                game.mode === '1p' ? 'inline-flex' : 'none';
+        }
+
+        function cycleAiDifficulty() {
+            game.aiDifficulty = (game.aiDifficulty + 1) % game.aiLabels.length;
+            document.getElementById('aiDiffText').textContent = `AI: ${game.aiLabels[game.aiDifficulty]}`;
+            document.getElementById('p2ControlHint').textContent = `AI (${game.aiLabels[game.aiDifficulty]})`;
+        }
+
+        function toggleSound() {
+            sound.enabled = !sound.enabled;
+            document.getElementById('soundBtn').textContent = sound.enabled ? '🔊' : '🔇';
+        }
+
+        function resetPositions(serveTo = 'center') {
+            if (!isVertical) {
+                zaid.x = 140;
+                zaid.y = RH / 2;
+                ahmed.x = RW - 140;
+                ahmed.y = RH / 2;
+
+                puck.y = RH / 2;
+                if (serveTo === 'zaid') puck.x = RW * 0.36;
+                else if (serveTo === 'ahmed') puck.x = RW * 0.64;
+                else puck.x = RW / 2;
+            } else {
+                // Vertical mode: Zaid at bottom, Ahmed at top
+                zaid.x = RW / 2;
+                zaid.y = RH - 140;
+                ahmed.x = RW / 2;
+                ahmed.y = 140;
+
+                puck.x = RW / 2;
+                if (serveTo === 'zaid') puck.y = RH * 0.64;
+                else if (serveTo === 'ahmed') puck.y = RH * 0.36;
+                else puck.y = RH / 2;
+            }
+            zaid.vx = zaid.vy = 0;
+            ahmed.vx = ahmed.vy = 0;
+            mousePos.active = false;
+            mousePos.x = zaid.x;
+            mousePos.y = zaid.y;
+            puck.vx = (Math.random() - 0.5) * 2.5;
+            puck.vy = (Math.random() - 0.5) * 2.5;
+            puck.stuckTimer = 0;
+            puck.anchorX = puck.x;
+            puck.anchorY = puck.y;
+            puck.aiBackoffTimer = 0;
+            game.puckTrail = [];
+        }
+
+        function resetMatch() {
+            game.scoreZaid = 0;
+            game.scoreAhmed = 0;
+            game.paused = false;
+            game.goalCooldown = 0;
+            zaid.power = 100;
+            ahmed.power = 100;
+            zaid.boostTimer = 0;
+            ahmed.boostTimer = 0;
+            document.getElementById('scoreZaid').textContent = '0';
+            document.getElementById('scoreAhmed').textContent = '0';
+            document.getElementById('matchOverlay').classList.add('hidden');
+            document.getElementById('goalOverlay').classList.add('hidden');
+            resetPositions('center');
+        }
+
+        /********************************************************************
+         * 7. MAIN SIMULATION STEP (INPUTS, AI, PHYSICS, GOALS)
+         ********************************************************************/
+        function spawnParticles(x, y, color, count = 16) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 8;
+                game.particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: 3 + Math.random() * 4,
+                    color,
+                    alpha: 1
+                });
+            }
+        }
+
+        function clampPaddleToHalf(p, playerKey) {
+            const r = p.radius;
+            const wallPad = 14;
+            if (!isVertical) {
+                p.y = Math.max(r + wallPad, Math.min(RH - r - wallPad, p.y));
+                if (playerKey === 'zaid') {
+                    p.x = Math.max(r + wallPad, Math.min(RW * 0.5 - r, p.x));
+                } else {
+                    p.x = Math.max(RW * 0.5 + r, Math.min(RW - r - wallPad, p.x));
+                }
+            } else {
+                // Vertical: Zaid bottom half, Ahmed top half
+                p.x = Math.max(r + wallPad, Math.min(RW - r - wallPad, p.x));
+                if (playerKey === 'zaid') {
+                    p.y = Math.max(RH * 0.5 + r, Math.min(RH - r - wallPad, p.y));
+                } else {
+                    p.y = Math.max(r + wallPad, Math.min(RH * 0.5 - r, p.y));
+                }
+            }
+        }
+
+        function updatePaddles() {
+            // Update Boost Timers & Power Regeneration
+            [zaid, ahmed].forEach((p) => {
+                if (p.boostTimer > 0) {
+                    p.boostTimer--;
+                    p.radius = paddleRadiusBase * 1.28;
+                } else {
+                    p.radius = paddleRadiusBase;
+                    p.power = Math.min(100, p.power + 0.18);
+                }
+            });
+
+            document.getElementById('zaidPowerBar').style.width = `${zaid.power}%`;
+            document.getElementById('ahmedPowerBar').style.width = `${ahmed.power}%`;
+
+            zaid.prevX = zaid.x;
+            zaid.prevY = zaid.y;
+            ahmed.prevX = ahmed.x;
+            ahmed.prevY = ahmed.y;
+
+            // --- 1. ZAID INPUT (Touch, Keyboard WASD, or Mouse) ---
+            let zaidTouchTarget = null;
+            for (const t of activeTouches.values()) {
+                if (t.player === 'zaid') {
+                    zaidTouchTarget = t;
+                    break; // Lock onto primary finger for Zaid to avoid multi-finger jumping
+                }
+            }
+
+            const kbSpeed = zaid.boostTimer > 0 ? 13 : 9.5;
+            let kbUsedZaid = false;
+            if (keys['KeyW']) { zaid.y -= kbSpeed; kbUsedZaid = true; }
+            if (keys['KeyS']) { zaid.y += kbSpeed; kbUsedZaid = true; }
+            if (keys['KeyA']) { zaid.x -= kbSpeed; kbUsedZaid = true; }
+            if (keys['KeyD']) { zaid.x += kbSpeed; kbUsedZaid = true; }
+
+            if (zaidTouchTarget) {
+                zaid.x += (zaidTouchTarget.x - zaid.x) * 0.48;
+                zaid.y += (zaidTouchTarget.y - zaid.y) * 0.48;
+                mousePos.x = zaid.x;
+                mousePos.y = zaid.y;
+            } else if (kbUsedZaid) {
+                mousePos.x = zaid.x;
+                mousePos.y = zaid.y;
+            } else if (mousePos.active && !ignoreMouseUntilNewMove) {
+                zaid.x += (mousePos.x - zaid.x) * 0.36;
+                zaid.y += (mousePos.y - zaid.y) * 0.36;
+            }
+            clampPaddleToHalf(zaid, 'zaid');
+
+            // --- 2. AHMED INPUT (Touch, 2P Arrow Keys, or Smart AI) ---
+            let ahmedTouchTarget = null;
+            for (const t of activeTouches.values()) {
+                if (t.player === 'ahmed') {
+                    ahmedTouchTarget = t;
+                    break; // Lock onto primary finger for Ahmed
+                }
+            }
+
+            if (ahmedTouchTarget) {
+                ahmed.x += (ahmedTouchTarget.x - ahmed.x) * 0.48;
+                ahmed.y += (ahmedTouchTarget.y - ahmed.y) * 0.48;
+            } else {
+                if (game.mode === '2p') {
+                    const p2Speed = ahmed.boostTimer > 0 ? 13 : 9.5;
+                    if (keys['ArrowUp']) ahmed.y -= p2Speed;
+                    if (keys['ArrowDown']) ahmed.y += p2Speed;
+                    if (keys['ArrowLeft']) ahmed.x -= p2Speed;
+                    if (keys['ArrowRight']) ahmed.x += p2Speed;
+                } else {
+                    updateAhmedAI();
+                }
+            }
+            clampPaddleToHalf(ahmed, 'ahmed');
+
+            // Calculate instantaneous paddle velocities for realistic slapshots
+            zaid.vx = zaid.x - zaid.prevX;
+            zaid.vy = zaid.y - zaid.prevY;
+            ahmed.vx = ahmed.x - ahmed.prevX;
+            ahmed.vy = ahmed.y - ahmed.prevY;
+        }
+
+        function updateAhmedAI() {
+            const speedSettings = [5.5, 8.2, 11.5, 14.5];
+            const maxStep = speedSettings[game.aiDifficulty] * (ahmed.boostTimer > 0 ? 1.25 : 1);
+
+            // Auto-use Ahmed's Chocolate Rush when puck is on Ahmed's side & power is full
+            if (ahmed.power >= 100 && Math.random() < 0.015) {
+                useSpecialPower('ahmed');
+            }
+
+            const wallMargin = 95;
+            const nearLeftOrRightWall = puck.x < wallMargin || puck.x > RW - wallMargin;
+            const nearTopOrBottomWall = puck.y < wallMargin || puck.y > RH - wallMargin;
+            const puckInCorner = nearLeftOrRightWall && nearTopOrBottomWall;
+            const distToPuck = Math.hypot(puck.x - ahmed.x, puck.y - ahmed.y);
+
+            // Detect if AI is crowding the puck against a wall or corner
+            if ((puckInCorner || nearTopOrBottomWall || nearLeftOrRightWall) && distToPuck < ahmed.radius + puck.radius + 18) {
+                puck.aiBackoffTimer = Math.min(55, puck.aiBackoffTimer + 2);
+            } else if (puck.aiBackoffTimer > 0) {
+                puck.aiBackoffTimer--;
+            }
+
+            let targetX, targetY;
+            if (!isVertical) {
+                const homeX = RW - 135;
+                // If puck is trapped in a corner or AI is pinning it, back off toward an open angle so puck can pop out
+                if (puck.aiBackoffTimer > 16 || (puckInCorner && puck.x > RW * 0.5)) {
+                    targetX = RW - 165;
+                    targetY = RH * 0.5 + (puck.y - RH * 0.5) * 0.35;
+                } else if (puck.x > RW * 0.48) {
+                    // Approach from behind the puck to hit it toward Zaid's goal instead of into the side boards
+                    const behindX = Math.min(RW - ahmed.radius - 20, puck.x + 28);
+                    const aimOffsetY = (puck.y - RH * 0.5) * 0.18;
+                    if (puck.x < ahmed.x + 10) {
+                        targetX = puck.x;
+                        targetY = puck.y + aimOffsetY;
+                    } else {
+                        // Circle behind the puck first rather than slamming it into the back wall
+                        targetX = behindX;
+                        targetY = puck.y + (puck.y < RH * 0.5 ? 55 : -55);
+                    }
+                } else {
+                    // Defend goal crease
+                    targetX = homeX;
+                    targetY = RH * 0.5 + (puck.y - RH * 0.5) * 0.55;
+                }
+            } else {
+                // Vertical rink AI (Ahmed at top)
+                const homeY = 135;
+                if (puck.aiBackoffTimer > 16 || (puckInCorner && puck.y < RH * 0.5)) {
+                    targetX = RW * 0.5 + (puck.x - RW * 0.5) * 0.35;
+                    targetY = 165;
+                } else if (puck.y < RH * 0.52) {
+                    const behindY = Math.max(ahmed.radius + 20, puck.y - 28);
+                    const aimOffsetX = (puck.x - RW * 0.5) * 0.18;
+                    if (puck.y > ahmed.y - 10) {
+                        targetX = puck.x + aimOffsetX;
+                        targetY = puck.y;
+                    } else {
+                        targetX = puck.x + (puck.x < RW * 0.5 ? 55 : -55);
+                        targetY = behindY;
+                    }
+                } else {
+                    targetX = RW * 0.5 + (puck.x - RW * 0.5) * 0.55;
+                    targetY = homeY;
+                }
+            }
+
+            const dx = targetX - ahmed.x;
+            const dy = targetY - ahmed.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 1) {
+                const move = Math.min(dist, maxStep);
+                ahmed.x += (dx / dist) * move;
+                ahmed.y += (dy / dist) * move;
+            }
+        }
+
+        function resolvePaddleCollision(p, playerKey) {
+            const dx = puck.x - p.x;
+            const dy = puck.y - p.y;
+            const dist = Math.hypot(dx, dy);
+            const minDist = puck.radius + p.radius;
+
+            if (dist < minDist && dist > 0.0001) {
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                // Separate both puck and paddle slightly so paddles cannot crush the puck into a wall
+                const overlap = minDist - dist;
+                puck.x += nx * (overlap * 0.8 + 1);
+                puck.y += ny * (overlap * 0.8 + 1);
+                p.x -= nx * (overlap * 0.2);
+                p.y -= ny * (overlap * 0.2);
+                clampPaddleToHalf(p, playerKey);
+
+                // Reflect velocity & inject paddle momentum
+                const relVx = puck.vx - p.vx;
+                const relVy = puck.vy - p.vy;
+                const normalVel = relVx * nx + relVy * ny;
+
+                if (normalVel < 0) {
+                    const boostMultiplier = p.boostTimer > 0 ? 1.42 : 1.12;
+                    const restitution = 1.05;
+                    puck.vx = (puck.vx - (1 + restitution) * normalVel * nx) + p.vx * 0.65 * boostMultiplier;
+                    puck.vy = (puck.vy - (1 + restitution) * normalVel * ny) + p.vy * 0.65 * boostMultiplier;
+
+                    // Ensure minimum lively bounce
+                    const currentSpeed = Math.hypot(puck.vx, puck.vy);
+                    const minBounce = p.boostTimer > 0 ? 15 : 9.5;
+                    if (currentSpeed < minBounce) {
+                        puck.vx = nx * minBounce;
+                        puck.vy = ny * minBounce;
+                    }
+
+                    // Cap max speed
+                    const cap = p.boostTimer > 0 ? puck.maxSpeed * 1.25 : puck.maxSpeed;
+                    if (currentSpeed > cap) {
+                        puck.vx = (puck.vx / currentSpeed) * cap;
+                        puck.vy = (puck.vy / currentSpeed) * cap;
+                    }
+
+                    const newSpeed = Math.hypot(puck.vx, puck.vy);
+                    game.lastSpeedKmh = Math.round(newSpeed * 5.8);
+                    document.getElementById('shotSpeedBadge').textContent = `${game.lastSpeedKmh} km/h`;
+
+                    sound.playPaddleHit(newSpeed);
+                    spawnParticles(
+                        puck.x - nx * puck.radius,
+                        puck.y - ny * puck.radius,
+                        playerKey === 'zaid' ? '#38bdf8' : '#fb923c',
+                        p.boostTimer > 0 ? 22 : 10
+                    );
+                }
+            }
+        }
+
+        function resolveCornerBumpers() {
+            // Diagonal 45-degree corner bevels so the puck smoothly slides out of all 4 corners
+            const wallPad = 14;
+            const cornerSize = 68;
+            const corners = [
+                { cx: wallPad, cy: wallPad, nx: Math.SQRT1_2, ny: Math.SQRT1_2 },
+                { cx: RW - wallPad, cy: wallPad, nx: -Math.SQRT1_2, ny: Math.SQRT1_2 },
+                { cx: wallPad, cy: RH - wallPad, nx: Math.SQRT1_2, ny: -Math.SQRT1_2 },
+                { cx: RW - wallPad, cy: RH - wallPad, nx: -Math.SQRT1_2, ny: -Math.SQRT1_2 }
+            ];
+
+            for (let i = 0; i < corners.length; i++) {
+                const c = corners[i];
+                // Signed distance from the diagonal corner plane
+                const relX = puck.x - c.cx;
+                const relY = puck.y - c.cy;
+                const proj = relX * c.nx + relY * c.ny;
+                const minProj = cornerSize * Math.SQRT1_2 + puck.radius;
+
+                if (proj < minProj) {
+                    const push = minProj - proj;
+                    puck.x += c.nx * push;
+                    puck.y += c.ny * push;
+
+                    const vn = puck.vx * c.nx + puck.vy * c.ny;
+                    if (vn < 0) {
+                        puck.vx -= 1.95 * vn * c.nx;
+                        puck.vy -= 1.95 * vn * c.ny;
+                        sound.playWallBounce();
+                    }
+                }
+            }
+        }
+
+        function triggerGoal(scorerKey) {
+            sound.playGoalHorn();
+            game.goalCooldown = 110; // ~1.8s celebration
+
+            if (scorerKey === 'zaid') {
+                game.scoreZaid++;
+                document.getElementById('scoreZaid').textContent = game.scoreZaid;
+            } else {
+                game.scoreAhmed++;
+                document.getElementById('scoreAhmed').textContent = game.scoreAhmed;
+            }
+
+            // Confetti burst
+            for (let i = 0; i < 45; i++) {
+                spawnParticles(
+                    RW * 0.5 + (Math.random() - 0.5) * 220,
+                    RH * 0.5 + (Math.random() - 0.5) * 140,
+                    ['#38bdf8', '#fb923c', '#fde047', '#4ade80', '#f472b6'][i % 5],
+                    2
+                );
+            }
+
+            // Render scorer portrait in Goal Banner
+            const goalAvatar = document.getElementById('goalScorerAvatar');
+            const gCtx = goalAvatar.getContext('2d');
+            gCtx.clearRect(0, 0, goalAvatar.width, goalAvatar.height);
+            renderPlayerAvatar(gCtx, scorerKey, 48, 48, 44, true);
+
+            const name = scorerKey === 'zaid' ? 'ZAID' : 'AHMED';
+            document.getElementById('goalTitleText').textContent = `GOAL BY ${name}!`;
+            document.getElementById('goalSubText').textContent =
+                `Shot Speed: ${Math.max(42, game.lastSpeedKmh)} km/h • Crowd Goes Wild!`;
+            document.getElementById('goalOverlay').classList.remove('hidden');
+
+            // Check match win condition
+            if (game.scoreZaid >= game.targetScore || game.scoreAhmed >= game.targetScore) {
+                setTimeout(() => {
+                    document.getElementById('goalOverlay').classList.add('hidden');
+                    showMatchWinner(scorerKey);
+                }, 1400);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('goalOverlay').classList.add('hidden');
+                    resetPositions(scorerKey === 'zaid' ? 'ahmed' : 'zaid');
+                }, 1500);
+            }
+        }
+
+        function showMatchWinner(winnerKey) {
+            game.paused = true;
+            const winCanvas = document.getElementById('winnerAvatarCanvas');
+            const wCtx = winCanvas.getContext('2d');
+            wCtx.clearRect(0, 0, winCanvas.width, winCanvas.height);
+            renderPlayerAvatar(wCtx, winnerKey, 45, 45, 41, true);
+
+            const winnerName = winnerKey === 'zaid' ? 'ZAID' : 'AHMED';
+            document.getElementById('overlayHeadline').textContent = `🏆 ${winnerName} WINS!`;
+            document.getElementById('overlayDescription').textContent =
+                `Final Score: Zaid ${game.scoreZaid} — ${game.scoreAhmed} Ahmed. Ready for a rematch?`;
+            document.getElementById('matchOverlay').classList.remove('hidden');
+        }
+
+        function updatePhysics() {
+            if (game.paused) return;
+
+            updatePaddles();
+
+            if (game.goalCooldown > 0) {
+                game.goalCooldown--;
+                return;
+            }
+
+            // Sub-stepped physics for high-speed puck stability
+            const subSteps = 3;
+            for (let s = 0; s < subSteps; s++) {
+                puck.x += puck.vx / subSteps;
+                puck.y += puck.vy / subSteps;
+
+                resolveCornerBumpers();
+                resolvePaddleCollision(zaid, 'zaid');
+                resolvePaddleCollision(ahmed, 'ahmed');
+                resolveCornerBumpers();
+
+                // Wall & Goal collisions
+                const wallPad = 14;
+                const goalHalfWidth = 105;
+
+                if (!isVertical) {
+                    // Top & Bottom boards
+                    if (puck.y - puck.radius < wallPad) {
+                        puck.y = wallPad + puck.radius;
+                        puck.vy = Math.abs(puck.vy) * 0.98;
+                        sound.playWallBounce();
+                    } else if (puck.y + puck.radius > RH - wallPad) {
+                        puck.y = RH - wallPad - puck.radius;
+                        puck.vy = -Math.abs(puck.vy) * 0.98;
+                        sound.playWallBounce();
+                    }
+
+                    const inGoalMouth = Math.abs(puck.y - RH * 0.5) < goalHalfWidth - puck.radius * 0.35;
+
+                    // Left wall / Zaid's goal
+                    if (puck.x - puck.radius < wallPad) {
+                        if (inGoalMouth) {
+                            if (puck.x < 0) {
+                                triggerGoal('ahmed');
+                                return;
+                            }
+                        } else {
+                            puck.x = wallPad + puck.radius;
+                            puck.vx = Math.abs(puck.vx) * 0.98;
+                            sound.playWallBounce();
+                        }
+                    }
+
+                    // Right wall / Ahmed's goal
+                    if (puck.x + puck.radius > RW - wallPad) {
+                        if (inGoalMouth) {
+                            if (puck.x > RW) {
+                                triggerGoal('zaid');
+                                return;
+                            }
+                        } else {
+                            puck.x = RW - wallPad - puck.radius;
+                            puck.vx = -Math.abs(puck.vx) * 0.98;
+                            sound.playWallBounce();
+                        }
+                    }
+                } else {
+                    // Vertical Rink: Left & Right boards
+                    if (puck.x - puck.radius < wallPad) {
+                        puck.x = wallPad + puck.radius;
+                        puck.vx = Math.abs(puck.vx) * 0.98;
+                        sound.playWallBounce();
+                    } else if (puck.x + puck.radius > RW - wallPad) {
+                        puck.x = RW - wallPad - puck.radius;
+                        puck.vx = -Math.abs(puck.vx) * 0.98;
+                        sound.playWallBounce();
+                    }
+
+                    const inGoalMouth = Math.abs(puck.x - RW * 0.5) < goalHalfWidth - puck.radius * 0.35;
+
+                    // Top wall / Ahmed's goal
+                    if (puck.y - puck.radius < wallPad) {
+                        if (inGoalMouth) {
+                            if (puck.y < 0) {
+                                triggerGoal('zaid');
+                                return;
+                            }
+                        } else {
+                            puck.y = wallPad + puck.radius;
+                            puck.vy = Math.abs(puck.vy) * 0.98;
+                            sound.playWallBounce();
+                        }
+                    }
+
+                    // Bottom wall / Zaid's goal
+                    if (puck.y + puck.radius > RH - wallPad) {
+                        if (inGoalMouth) {
+                            if (puck.y > RH) {
+                                triggerGoal('ahmed');
+                                return;
+                            }
+                        } else {
+                            puck.y = RH - wallPad - puck.radius;
+                            puck.vy = -Math.abs(puck.vy) * 0.98;
+                            sound.playWallBounce();
+                        }
+                    }
+                }
+            }
+
+            // Ice friction (very low so puck glides smoothly)
+            puck.vx *= 0.9965;
+            puck.vy *= 0.9965;
+
+            // Position-based stuck & corner-pin detector (works even if puck is vibrating against a paddle)
+            const movedDist = Math.hypot(puck.x - puck.anchorX, puck.y - puck.anchorY);
+            if (movedDist < 28) {
+                puck.stuckTimer++;
+                if (puck.stuckTimer > 50) {
+                    // Eject puck cleanly toward the center of the rink
+                    const toCenterX = RW * 0.5 - puck.x;
+                    const toCenterY = RH * 0.5 - puck.y;
+                    const len = Math.hypot(toCenterX, toCenterY) || 1;
+                    puck.x += (toCenterX / len) * 18;
+                    puck.y += (toCenterY / len) * 18;
+                    puck.vx = (toCenterX / len) * 10 + (Math.random() - 0.5) * 3;
+                    puck.vy = (toCenterY / len) * 10 + (Math.random() - 0.5) * 3;
+                    puck.aiBackoffTimer = 45;
+                    puck.stuckTimer = 0;
+                    puck.anchorX = puck.x;
+                    puck.anchorY = puck.y;
+                    spawnParticles(puck.x, puck.y, '#fde047', 12);
+                }
+            } else {
+                puck.stuckTimer = 0;
+                puck.anchorX = puck.x;
+                puck.anchorY = puck.y;
+            }
+
+            // Record puck trail
+            game.puckTrail.push({ x: puck.x, y: puck.y, speed: Math.hypot(puck.vx, puck.vy) });
+            if (game.puckTrail.length > 12) game.puckTrail.shift();
+        }
+
+        /********************************************************************
+         * 8. RINK, PADDLES & EFFECTS RENDERING
+         ********************************************************************/
+        function drawRink() {
+            // 1. Crisp Ice Surface Gradient
+            const iceGrad = ctx.createRadialGradient(RW * 0.5, RH * 0.5, 40, RW * 0.5, RH * 0.5, Math.max(RW, RH) * 0.7);
+            iceGrad.addColorStop(0, '#ffffff');
+            iceGrad.addColorStop(0.6, '#f0f9ff');
+            iceGrad.addColorStop(1, '#e0f2fe');
+            ctx.fillStyle = iceGrad;
+            ctx.fillRect(0, 0, RW, RH);
+
+            // 2. Subtle Air-Hockey Air Holes Grid
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.22)';
+            const step = 40;
+            for (let x = step; x < RW; x += step) {
+                for (let y = step; y < RH; y += step) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // 3. Blue Zone Lines & Red Center Line
+            ctx.save();
+            if (!isVertical) {
+                // Blue lines
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(RW * 0.32, 14);
+                ctx.lineTo(RW * 0.32, RH - 14);
+                ctx.moveTo(RW * 0.68, 14);
+                ctx.lineTo(RW * 0.68, RH - 14);
+                ctx.stroke();
+
+                // Center Red Line
+                ctx.strokeStyle = 'rgba(244, 63, 94, 0.55)';
+                ctx.lineWidth = 8;
+                ctx.setLineDash([18, 14]);
+                ctx.beginPath();
+                ctx.moveTo(RW * 0.5, 14);
+                ctx.lineTo(RW * 0.5, RH - 14);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            } else {
+                // Vertical lines
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(14, RH * 0.32);
+                ctx.lineTo(RW - 14, RH * 0.32);
+                ctx.moveTo(14, RH * 0.68);
+                ctx.lineTo(RW - 14, RH * 0.68);
+                ctx.stroke();
+
+                ctx.strokeStyle = 'rgba(244, 63, 94, 0.55)';
+                ctx.lineWidth = 8;
+                ctx.setLineDash([18, 14]);
+                ctx.beginPath();
+                ctx.moveTo(14, RH * 0.5);
+                ctx.lineTo(RW - 14, RH * 0.5);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            ctx.restore();
+
+            // 4. Center Face-Off Circle & Watermark
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(RW * 0.5, RH * 0.5, 82, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.fill();
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = 'rgba(244, 63, 94, 0.5)';
+            ctx.stroke();
+
+            ctx.font = '800 16px Fredoka, sans-serif';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.25)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('ZAID VS AHMED', RW * 0.5, RH * 0.5 - 10);
+            ctx.font = '700 12px Inter, sans-serif';
+            ctx.fillText('ICE HOCKEY ARENA', RW * 0.5, RH * 0.5 + 10);
+            ctx.restore();
+
+            // 5. Goal Creases & Neon Goal Posts
+            const goalHalf = 105;
+            const wallPad = 14;
+            ctx.save();
+            if (!isVertical) {
+                // Left Crease (Zaid)
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
+                ctx.strokeStyle = '#0284c7';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(wallPad, RH * 0.5, goalHalf, -Math.PI * 0.5, Math.PI * 0.5);
+                ctx.fill();
+                ctx.stroke();
+
+                // Right Crease (Ahmed)
+                ctx.fillStyle = 'rgba(251, 146, 60, 0.16)';
+                ctx.strokeStyle = '#ea580c';
+                ctx.beginPath();
+                ctx.arc(RW - wallPad, RH * 0.5, goalHalf, Math.PI * 0.5, Math.PI * 1.5);
+                ctx.fill();
+                ctx.stroke();
+
+                // Rink Outer Boards (leaving goal mouths open)
+                ctx.lineWidth = wallPad;
+                ctx.lineCap = 'round';
+
+                // Zaid Side Boards (Sky Blue)
+                ctx.strokeStyle = '#0284c7';
+                ctx.beginPath();
+                ctx.moveTo(RW * 0.5, wallPad * 0.5);
+                ctx.lineTo(wallPad * 0.5, wallPad * 0.5);
+                ctx.lineTo(wallPad * 0.5, RH * 0.5 - goalHalf);
+                ctx.moveTo(wallPad * 0.5, RH * 0.5 + goalHalf);
+                ctx.lineTo(wallPad * 0.5, RH - wallPad * 0.5);
+                ctx.lineTo(RW * 0.5, RH - wallPad * 0.5);
+                ctx.stroke();
+
+                // Ahmed Side Boards (Orange)
+                ctx.strokeStyle = '#ea580c';
+                ctx.beginPath();
+                ctx.moveTo(RW * 0.5, wallPad * 0.5);
+                ctx.lineTo(RW - wallPad * 0.5, wallPad * 0.5);
+                ctx.lineTo(RW - wallPad * 0.5, RH * 0.5 - goalHalf);
+                ctx.moveTo(RW - wallPad * 0.5, RH * 0.5 + goalHalf);
+                ctx.lineTo(RW - wallPad * 0.5, RH - wallPad * 0.5);
+                ctx.lineTo(RW * 0.5, RH - wallPad * 0.5);
+                ctx.stroke();
+            } else {
+                // Vertical Creases
+                // Top Crease (Ahmed)
+                ctx.fillStyle = 'rgba(251, 146, 60, 0.16)';
+                ctx.strokeStyle = '#ea580c';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(RW * 0.5, wallPad, goalHalf, 0, Math.PI);
+                ctx.fill();
+                ctx.stroke();
+
+                // Bottom Crease (Zaid)
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
+                ctx.strokeStyle = '#0284c7';
+                ctx.beginPath();
+                ctx.arc(RW * 0.5, RH - wallPad, goalHalf, Math.PI, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.lineWidth = wallPad;
+                ctx.lineCap = 'round';
+
+                // Top Boards (Ahmed - Orange)
+                ctx.strokeStyle = '#ea580c';
+                ctx.beginPath();
+                ctx.moveTo(wallPad * 0.5, RH * 0.5);
+                ctx.lineTo(wallPad * 0.5, wallPad * 0.5);
+                ctx.lineTo(RW * 0.5 - goalHalf, wallPad * 0.5);
+                ctx.moveTo(RW * 0.5 + goalHalf, wallPad * 0.5);
+                ctx.lineTo(RW - wallPad * 0.5, wallPad * 0.5);
+                ctx.lineTo(RW - wallPad * 0.5, RH * 0.5);
+                ctx.stroke();
+
+                // Bottom Boards (Zaid - Sky Blue)
+                ctx.strokeStyle = '#0284c7';
+                ctx.beginPath();
+                ctx.moveTo(wallPad * 0.5, RH * 0.5);
+                ctx.lineTo(wallPad * 0.5, RH - wallPad * 0.5);
+                ctx.lineTo(RW * 0.5 - goalHalf, RH - wallPad * 0.5);
+                ctx.moveTo(RW * 0.5 + goalHalf, RH - wallPad * 0.5);
+                ctx.lineTo(RW - wallPad * 0.5, RH - wallPad * 0.5);
+                ctx.lineTo(RW - wallPad * 0.5, RH * 0.5);
+                ctx.stroke();
+            }
+
+            // 6. Beveled Arcade Corner Bumpers
+            const cornerSize = 68;
+            const cornerPolys = [
+                [[wallPad, wallPad], [wallPad + cornerSize, wallPad], [wallPad, wallPad + cornerSize]],
+                [[RW - wallPad, wallPad], [RW - wallPad - cornerSize, wallPad], [RW - wallPad, wallPad + cornerSize]],
+                [[wallPad, RH - wallPad], [wallPad + cornerSize, RH - wallPad], [wallPad, RH - wallPad - cornerSize]],
+                [[RW - wallPad, RH - wallPad], [RW - wallPad - cornerSize, RH - wallPad], [RW - wallPad, RH - wallPad - cornerSize]]
+            ];
+            cornerPolys.forEach((pts, idx) => {
+                ctx.fillStyle = (!isVertical ? (idx % 2 === 0) : (idx >= 2)) ? '#0284c7' : '#ea580c';
+                ctx.beginPath();
+                ctx.moveTo(pts[0][0], pts[0][1]);
+                ctx.lineTo(pts[1][0], pts[1][1]);
+                ctx.lineTo(pts[2][0], pts[2][1]);
+                ctx.closePath();
+                ctx.fill();
+            });
+            ctx.restore();
+        }
+
+        function drawPuck() {
+            // Puck motion trail
+            for (let i = 0; i < game.puckTrail.length; i++) {
+                const pt = game.puckTrail[i];
+                const ratio = (i + 1) / game.puckTrail.length;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, puck.radius * ratio * 0.85, 0, Math.PI * 2);
+                ctx.fillStyle = pt.speed > 14
+                    ? `rgba(244, 63, 94, ${ratio * 0.32})`
+                    : `rgba(56, 189, 248, ${ratio * 0.22})`;
+                ctx.fill();
+            }
+
+            // Puck drop shadow
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(puck.x + 3, puck.y + 4, puck.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.25)';
+            ctx.fill();
+
+            // Main Crimson/Dark Air Hockey Puck
+            const puckGrad = ctx.createRadialGradient(
+                puck.x - puck.radius * 0.3,
+                puck.y - puck.radius * 0.3,
+                2,
+                puck.x,
+                puck.y,
+                puck.radius
+            );
+            puckGrad.addColorStop(0, '#f43f5e');
+            puckGrad.addColorStop(0.75, '#e11d48');
+            puckGrad.addColorStop(1, '#881337');
+
+            ctx.beginPath();
+            ctx.arc(puck.x, puck.y, puck.radius, 0, Math.PI * 2);
+            ctx.fillStyle = puckGrad;
+            ctx.fill();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = '#4c0519';
+            ctx.stroke();
+
+            // Inner metallic groove on the puck
+            ctx.beginPath();
+            ctx.arc(puck.x, puck.y, puck.radius * 0.62, 0, Math.PI * 2);
+            ctx.lineWidth = 1.8;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawPaddles() {
+            const players = [
+                { obj: zaid, key: 'zaid', label: 'ZAID', auraColor: 'rgba(56, 189, 248, 0.38)' },
+                { obj: ahmed, key: 'ahmed', label: 'AHMED', auraColor: 'rgba(251, 146, 60, 0.38)' }
+            ];
+
+            players.forEach(({ obj, key, label, auraColor }) => {
+                ctx.save();
+
+                // Active Super-Boost Pulsing Ring
+                if (obj.boostTimer > 0) {
+                    const pulse = 1 + Math.sin(Date.now() * 0.02) * 0.08;
+                    ctx.beginPath();
+                    ctx.arc(obj.x, obj.y, obj.radius * 1.18 * pulse, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(250, 204, 21, 0.28)';
+                    ctx.fill();
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#fde047';
+                    ctx.stroke();
+                }
+
+                // Soft Ice Shadow under Paddle
+                ctx.beginPath();
+                ctx.arc(obj.x + 4, obj.y + 6, obj.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.28)';
+                ctx.fill();
+
+                // Ambient Team Glow
+                ctx.beginPath();
+                ctx.arc(obj.x, obj.y, obj.radius + 4, 0, Math.PI * 2);
+                ctx.fillStyle = auraColor;
+                ctx.fill();
+
+                // Draw Circular Photo / Illustrated Portrait inside the Paddle
+                renderPlayerAvatar(ctx, key, obj.x, obj.y, obj.radius, obj.boostTimer > 0);
+
+                // Floating Name Tag Below Paddle
+                ctx.font = '700 11px Fredoka, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const tagY = obj.y + obj.radius + 13;
+                const tagW = 54;
+                const tagH = 16;
+
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+                ctx.beginPath();
+                ctx.roundRect(obj.x - tagW / 2, tagY - tagH / 2, tagW, tagH, 6);
+                ctx.fill();
+
+                ctx.fillStyle = key === 'zaid' ? '#7dd3fc' : '#fdba74';
+                ctx.fillText(label, obj.x, tagY + 0.5);
+
+                ctx.restore();
+            });
+        }
+
+        function drawParticles() {
+            for (let i = game.particles.length - 1; i >= 0; i--) {
+                const pt = game.particles[i];
+                pt.x += pt.vx;
+                pt.y += pt.vy;
+                pt.vx *= 0.94;
+                pt.vy *= 0.94;
+                pt.alpha -= 0.028;
+
+                if (pt.alpha <= 0) {
+                    game.particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, pt.alpha);
+                ctx.fillStyle = pt.color;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        /********************************************************************
+         * 9. MAIN ANIMATION LOOP & INITIALIZATION
+         ********************************************************************/
+        function gameLoop() {
+            updatePhysics();
+            ctx.clearRect(0, 0, RW, RH);
+            drawRink();
+            drawPuck();
+            drawPaddles();
+            drawParticles();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = function () {
+            resizeRink();
+            resetPositions('center');
+            refreshAllAvatarCanvases();
+            tryAutoLoadRepoPhotos();
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
